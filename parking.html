@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A1 & G1</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom font family */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* A simple fade-in animation for a smooth load */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .fade-in {
+            animation: fadeIn 1s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white overflow-hidden">
+
+    <!-- Main container to center the content -->
+    <div class="min-h-screen flex items-center justify-center p-4">
+        
+        <!-- Background decorative glows -->
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-600 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse animation-delay-4000"></div>
+
+        <!-- Content container with fade-in animation -->
+        <div class="fade-in flex items-center justify-center space-x-6 sm:space-x-12 bg-black bg-opacity-20 backdrop-blur-md rounded-3xl p-8 sm:p-16 shadow-2xl border border-gray-700">
+            
+            <!-- A1 Text -->
+            <h1 class="text-7xl sm:text-9xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+                A1
+            </h1>
+
+            <!-- Vertical Separator -->
+            <div class="h-24 sm:h-36 w-px bg-gray-600"></div>
+
+            <!-- G1 Text -->
+            <h1 class="text-7xl sm:text-9xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-l from-teal-300 via-sky-500 to-indigo-500">
+                G1
+            </h1>
+
+        </div>
+    </div>
+
+</body>
+</html>
+
