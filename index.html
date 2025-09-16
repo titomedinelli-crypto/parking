@@ -1,66 +1,702 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A1 & G1</title>
-    <!-- Tailwind CSS for styling -->
+    <title>ศูนย์การเรียนรู้เรื่องเซต</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@200;300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
-        /* Custom font family */
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Mitr', sans-serif;
+            background-color: #f8fafc;
         }
 
-        /* A simple fade-in animation for a smooth load */
+        /* --- Animations --- */
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .fade-in {
-            animation: fadeIn 1s ease-out forwards;
+
+        @keyframes modal-scale-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes blob-move-1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(40px, -60px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(20px, 50px) scale(1.2); }
+        }
+        @keyframes blob-move-2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-50px, 30px) scale(1.2); }
+            50% { transform: translate(40px, -40px) scale(0.8); }
+            75% { transform: translate(-20px, -60px) scale(1.1); }
+        }
+        @keyframes blob-move-3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, 50px) scale(1.1); }
+            50% { transform: translate(-40px, -20px) scale(0.9); }
+            75% { transform: translate(50px, -30px) scale(1.2); }
+        }
+        
+        .animated-blob {
+            filter: blur(80px);
+            transition: all 0.3s ease;
+        }
+
+        /* Page transition animations */
+        .section-enter-active {
+            animation: slide-in-from-top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+        .section-leave-active {
+            animation: slide-out-to-top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+        @keyframes slide-in-from-top {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slide-out-to-top {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(20px); opacity: 0; }
+        }
+
+        /* Typing indicator animation */
+        .typing-indicator span {
+            height: 8px; width: 8px; float: left; margin: 0 2px;
+            background-color: #9E9EA1; display: block; border-radius: 50%;
+            opacity: 0.4; animation: typing 1s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 100% { opacity: 0.4; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+        
+        /* Custom scrollbar for chat */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+        /* Nav active state */
+        .nav-link.active {
+            border-bottom-color: #4f46e5;
+            color: #1e293b;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white overflow-hidden">
 
-    <!-- Main container to center the content -->
-    <div class="min-h-screen flex items-center justify-center p-4">
-        
-        <!-- Background decorative glows -->
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-600 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse animation-delay-4000"></div>
+<body class="antialiased text-slate-700">
 
-        <!-- Content container with fade-in animation -->
-        <div class="fade-in flex items-center justify-center space-x-6 sm:space-x-12 bg-black bg-opacity-20 backdrop-blur-md rounded-3xl p-8 sm:p-16 shadow-2xl border border-gray-700">
+    <section id="login-section" class="relative min-h-screen w-full flex items-center justify-center overflow-hidden transition-opacity duration-500">
+        <div class="absolute top-0 left-0 w-full h-full z-0">
+            <div class="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-300 rounded-full animated-blob opacity-70" style="animation: blob-move-1 15s infinite ease;"></div>
+            <div class="absolute top-1/2 right-1/4 w-80 h-80 bg-blue-300 rounded-full animated-blob opacity-60" style="animation: blob-move-2 18s infinite ease-in-out;"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-60 h-60 bg-indigo-300 rounded-full animated-blob opacity-50" style="animation: blob-move-3 12s infinite linear;"></div>
+        </div>
+
+        <div id="auth-container" class="relative z-10 w-full max-w-md p-8 space-y-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl m-4">
+            <div id="login-view">
+                <div class="text-center">
+                    <h2 class="text-4xl font-bold text-slate-800">ยินดีต้อนรับ</h2>
+                    <p class="mt-2 text-slate-600">เข้าสู่ระบบเพื่อใช้งาน</p>
+                </div>
+                <form id="login-form" class="mt-8 space-y-6">
+                    <div id="login-error" class="hidden p-3 bg-red-100 text-red-700 rounded-lg text-sm"></div>
+                    <div class="rounded-md shadow-sm -space-y-px">
+                        <div>
+                            <label for="login-email" class="sr-only">อีเมล</label>
+                            <input id="login-email" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="อีเมล">
+                        </div>
+                        <div>
+                            <label for="login-password" class="sr-only">รหัสผ่าน</label>
+                            <input id="login-password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="รหัสผ่าน">
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            เข้าสู่ระบบ
+                        </button>
+                    </div>
+                </form>
+                <p class="mt-4 text-center text-sm text-slate-600">
+                    ยังไม่มีบัญชี? <a href="#" id="show-signup" class="font-medium text-indigo-600 hover:text-indigo-500">สมัครสมาชิก</a>
+                </p>
+            </div>
+
+            <div id="signup-view" class="hidden">
+                <div class="text-center">
+                    <h2 class="text-4xl font-bold text-slate-800">สร้างบัญชีใหม่</h2>
+                    <p class="mt-2 text-slate-600">เริ่มต้นการเรียนรู้ได้เลย!</p>
+                </div>
+                <form id="signup-form" class="mt-8 space-y-6">
+                    <div id="signup-error" class="hidden p-3 bg-red-100 text-red-700 rounded-lg text-sm"></div>
+                    <div class="rounded-md shadow-sm">
+                        <div>
+                            <label for="signup-username" class="sr-only">ชื่อผู้ใช้</label>
+                            <input id="signup-username" name="username" type="text" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="ชื่อผู้ใช้">
+                        </div>
+                        <div class="-mt-px">
+                            <label for="signup-email" class="sr-only">อีเมล</label>
+                            <input id="signup-email" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="อีเมล">
+                        </div>
+                        <div class="-mt-px">
+                            <label for="signup-password" class="sr-only">รหัสผ่าน</label>
+                            <input id="signup-password" name="password" type="password" autocomplete="new-password" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="รหัสผ่าน">
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            สมัครสมาชิก
+                        </button>
+                    </div>
+                </form>
+                <p class="mt-4 text-center text-sm text-slate-600">
+                    มีบัญชีอยู่แล้ว? <a href="#" id="show-login" class="font-medium text-indigo-600 hover:text-indigo-500">เข้าสู่ระบบ</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <main id="main-app" class="hidden opacity-0 transition-opacity duration-500 relative min-h-screen flex flex-col" style="animation: fadeIn 0.7s ease-out forwards;">
+        <div class="fixed top-0 left-0 w-full h-full z-[-1]">
+            <div class="absolute -top-20 -left-20 w-80 h-80 bg-purple-300 rounded-full animated-blob opacity-30" style="animation: blob-move-1 15s infinite ease;"></div>
+            <div class="absolute top-1/2 right-1/4 w-96 h-96 bg-blue-300 rounded-full animated-blob opacity-20" style="animation: blob-move-2 18s infinite ease-in-out;"></div>
+            <div class="absolute bottom-0 -right-20 w-72 h-72 bg-indigo-300 rounded-full animated-blob opacity-30" style="animation: blob-move-3 12s infinite linear;"></div>
+        </div>
+
+        <header class="bg-white/70 backdrop-blur-xl sticky top-0 z-40 shadow-sm border-b border-white/30">
+            <div class="mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-2xl font-bold text-indigo-600">SucSet</h1>
+                    </div>
+
+                    <div class="hidden md:flex items-center">
+                        <nav class="flex space-x-8">
+                            <a href="#study-zone" class="nav-link text-slate-500 hover:text-slate-800 px-3 py-2 text-md font-medium border-b-2 border-transparent transition-all duration-300 active">โซนเรียนรู้</a>
+                            <a href="#recap-arcade" class="nav-link text-slate-500 hover:text-slate-800 px-3 py-2 text-md font-medium border-b-2 border-transparent transition-all duration-300">อาเขตทบทวน</a>
+                            <a href="#collab-hub" class="nav-link text-slate-500 hover:text-slate-800 px-3 py-2 text-md font-medium border-b-2 border-transparent transition-all duration-300">ศูนย์รวมความร่วมมือ</a>
+                            <a href="#friends-challenge" class="nav-link text-slate-500 hover:text-slate-800 px-3 py-2 text-md font-medium border-b-2 border-transparent transition-all duration-300">ท้าทายเพื่อน</a>
+                        </nav>
+
+                        <div class="relative ml-6" id="profile-menu">
+                            <button id="profile-menu-button" type="button" class="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-full">
+                                <span id="user-name-desktop" class="text-sm font-medium text-slate-700 hidden lg:block"></span>
+                                <img id="profile-img-desktop" class="h-9 w-9 rounded-full border-2 border-white shadow-sm object-cover" src="" alt="User Profile">
+                            </button>
+                            <div id="profile-menu-dropdown" class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white/80 backdrop-blur-lg rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none py-1 border border-white/30" style="animation: fadeIn 0.15s ease-out;">
+                                <div class="px-4 py-2">
+                                    <p id="user-name-dropdown" class="text-sm font-semibold text-slate-800"></p>
+                                    <p id="user-email-dropdown" class="text-sm text-slate-500 truncate"></p>
+                                </div>
+                                <div class="border-t border-slate-200/50 my-1"></div>
+                                <a href="#profile-page" class="nav-link block px-4 py-2 text-sm text-slate-700 hover:bg-white/50 transition-colors">โปรไฟล์</a>
+                                <a href="#settings-page" class="nav-link block px-4 py-2 text-sm text-slate-700 hover:bg-white/50 transition-colors">การตั้งค่า</a>
+                                <div class="border-t border-slate-200/50 my-1"></div>
+                                <a href="#" id="logout-btn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-white/50 transition-colors">ออกจากระบบ</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="md:hidden">
+                        <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-lg text-indigo-600 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-colors duration-300">
+                            <span class="sr-only">Open main menu</span>
+                            <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="md:hidden hidden" id="mobile-menu">
+                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-b border-slate-200">
+                    <a href="#study-zone" class="nav-link text-slate-600 hover:bg-white/50 block px-3 py-2 rounded-md text-base font-medium active">โซนเรียนรู้</a>
+                    <a href="#recap-arcade" class="nav-link text-slate-600 hover:bg-white/50 block px-3 py-2 rounded-md text-base font-medium">อาเขตทบทวน</a>
+                    <a href="#collab-hub" class="nav-link text-slate-600 hover:bg-white/50 block px-3 py-2 rounded-md text-base font-medium">ศูนย์รวมความร่วมมือ</a>
+                    <a href="#friends-challenge" class="nav-link text-slate-600 hover:bg-white/50 block px-3 py-2 rounded-md text-base font-medium">ท้าทายเพื่อน</a>
+                </div>
+                <div class="pt-4 pb-3">
+                    <div class="flex items-center px-5">
+                        <div class="flex-shrink-0">
+                            <img id="profile-img-mobile" class="h-10 w-10 rounded-full object-cover" src="" alt="User Profile">
+                        </div>
+                        <div class="ml-3">
+                            <div id="user-name-mobile" class="text-base font-medium text-slate-800"></div>
+                            <div id="user-email-mobile" class="text-sm font-medium text-slate-500"></div>
+                        </div>
+                    </div>
+                    <div class="mt-3 px-2 space-y-1">
+                        <a href="#profile-page" class="nav-link block rounded-md px-3 py-2 text-base font-medium text-slate-600 hover:bg-white/50">โปรไฟล์</a>
+                        <a href="#settings-page" class="nav-link block rounded-md px-3 py-2 text-base font-medium text-slate-600 hover:bg-white/50">การตั้งค่า</a>
+                        <a href="#" id="mobile-logout-btn" class="block rounded-md px-3 py-2 text-base font-medium text-slate-600 hover:bg-white/50">ออกจากระบบ</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full">
+            <section id="study-zone" class="app-section">
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">โซนเรียนรู้: พื้นฐานเรื่องเซต</h2>
+                <div class="bg-white/70 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white/30">
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="lg:w-[60%] w-full relative">
+                            <div id="player" class="aspect-video rounded-lg overflow-hidden bg-black shadow-lg"></div>
+                            <canvas id="video-overlay" class="hidden absolute top-0 left-0 w-full h-full pointer-events-none z-10"></canvas>
+                        </div>
+                        <div class="lg:w-[40%] w-full flex flex-col">
+                            <div class="flex flex-col h-full border border-white/30 rounded-lg bg-white/50 backdrop-blur-sm">
+                                <div class="p-4 border-b border-white/30">
+                                    <h3 class="font-semibold text-slate-800">ผู้ช่วย AI 'น้องขอม'</h3>
+                                    <p class="text-sm text-slate-500">มีคำถามเรื่องเซตใช่ไหม? ถามได้เลย!</p>
+                                </div>
+                                <div id="study-chat-box" class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4" style="min-height: 250px;">
+                                    <div class="flex justify-start">
+                                        <div class="bg-white/60 backdrop-blur-lg border border-white/20 p-3 rounded-lg max-w-xs">
+                                            <p class="text-sm">
+                                                สวัสดีค่ะ! กำลังเรียนเรื่องเซตอยู่ใช่ไหมคะ? มีอะไรให้พี่ 'น้องขอม' ช่วยอธิบายเพิ่มเติมไหม ถามมาได้เลยน้า 😊
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4 border-t border-white/30">
+                                    <div class="flex space-x-2">
+                                        <input type="text" id="study-chat-input" class="flex-1 border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 bg-white/60 backdrop-blur-lg border-white/20" placeholder="พิมพ์คำถามของคุณ...">
+                                        <button id="study-chat-send" class="px-4 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white">ส่ง</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="recap-arcade" class="app-section hidden">
+                 <h2 class="text-3xl font-bold text-slate-800 mb-6">อาเขตทบทวน</h2>
+                 <p>ส่วนนี้กำลังพัฒนา...</p>
+            </section>
+
+            <section id="collab-hub" class="app-section hidden">
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">ศูนย์รวมความร่วมมือ</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 bg-white/70 backdrop-blur-xl rounded-xl shadow-lg border border-white/30 p-6">
+                        <h3 class="text-xl font-semibold mb-4">พูดคุยกับเพื่อนๆ</h3>
+                        <div class="h-96 border border-white/30 rounded-lg mb-4 p-4 overflow-y-auto custom-scrollbar">
+                            <p class="text-slate-500 text-center">ฟีเจอร์แชทกลุ่มกำลังจะมาเร็วๆ นี้!</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <input type="text" class="flex-1 border-slate-300 bg-white/70 rounded-lg" placeholder="พิมพ์ข้อความ..." disabled>
+                            <button class="bg-slate-300 text-white px-4 py-2 rounded-lg cursor-not-allowed">ส่ง</button>
+                        </div>
+                    </div>
+                    <div class="space-y-8">
+                        <div class="bg-white/70 backdrop-blur-xl rounded-xl shadow-lg border border-white/30 p-6">
+                            <h3 class="text-xl font-semibold mb-4">AI ช่วยแก้โจทย์</h3>
+                            <p class="text-slate-600 mb-4">ติดปัญหาโจทย์ยากใช่ไหม? ให้ AI ของเราช่วยหาคำตอบและอธิบายแนวคิดให้คุณ</p>
+                            <button id="open-ai-solver-btn" class="w-full font-semibold py-3 rounded-lg transition-all duration-300 bg-purple-600 text-white">เริ่มใช้งาน AI Solver</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="friends-challenge" class="app-section hidden">
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">ท้าทายเพื่อน: แบบทดสอบประจำวัน</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 bg-white/70 backdrop-blur-xl rounded-xl shadow-lg border border-white/30 p-8 text-center flex flex-col justify-center items-center">
+                        <h3 class="text-2xl font-semibold mb-2 text-slate-800">ทดสอบความรู้เรื่องเซต!</h3>
+                        <p class="text-slate-600 mb-6">ตอบคำถามที่สร้างโดย AI เพื่อเก็บคะแนนและไต่อันดับไปกับเพื่อนๆ<br><span class="text-xs text-indigo-500 font-semibold">ขับเคลื่อนด้วย AI</span></p>
+                        <button id="start-quiz-btn" class="px-10 py-4 font-bold rounded-lg transition-all duration-300 shadow-lg text-lg bg-indigo-600 text-white">เริ่มทำแบบทดสอบประจำวัน</button>
+                    </div>
+                    <div class="bg-white/70 backdrop-blur-xl rounded-xl shadow-lg border border-white/30 p-6">
+                        <h3 class="text-xl font-semibold mb-4">ตารางคะแนน</h3>
+                        <p class="text-slate-500">ส่วนนี้กำลังพัฒนา...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="profile-page" class="app-section hidden">
+                </section>
             
-            <!-- A1 Text -->
-            <h1 class="text-7xl sm:text-9xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-                A1
-            </h1>
+            <section id="settings-page" class="app-section hidden">
+                </section>
+        </div>
+    </main>
 
-            <!-- Vertical Separator -->
-            <div class="h-24 sm:h-36 w-px bg-gray-600"></div>
-
-            <!-- G1 Text -->
-            <h1 class="text-7xl sm:text-9xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-l from-teal-300 via-sky-500 to-indigo-500">
-                G1
-            </h1>
-
+    <div id="ai-quiz-loading-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div class="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center" style="animation: modal-scale-in 0.3s ease-out forwards;">
+            <div class="flex justify-center items-center mb-4">
+                <svg class="animate-spin h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">AI กำลังสร้างแบบทดสอบชุดใหม่</h3>
+            <p class="text-slate-600">โปรดรอสักครู่...</p>
+        </div>
+    </div>
+    
+    <div id="quiz-modal" class="hidden fixed inset-0 bg-white z-50 flex flex-col p-4 sm:p-6 lg:p-8" style="animation: fadeIn 0.3s ease-out forwards;">
+        <div id="quiz-header" class="w-full max-w-4xl mx-auto mb-4">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-xl font-bold text-slate-800">แบบทดสอบเรื่องเซต</h2>
+                <button id="close-quiz-btn" class="text-slate-500 hover:text-slate-800 text-2xl font-bold">×</button>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-2.5">
+                <div id="quiz-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="quiz-content" class="flex-grow w-full max-w-4xl mx-auto flex flex-col justify-center"></div>
+    </div>
+    
+    <div id="ai-solver-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl w-full max-w-xl flex flex-col h-[80vh] relative" style="animation: modal-scale-in 0.3s ease-out forwards;">
+            <div class="p-4 border-b border-white/30">
+                <h3 class="font-semibold text-slate-800 text-lg">ผู้ช่วยแก้โจทย์ 'น้องขอม'</h3>
+                <p class="text-sm text-slate-500">พิมพ์โจทย์ปัญหาคณิตศาสตร์ของคุณที่นี่</p>
+            </div>
+            <div id="solver-chat-box" class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4">
+                <div class="flex justify-start">
+                    <div class="bg-white/60 backdrop-blur-lg border border-white/20 p-3 rounded-lg max-w-md">
+                        <p class="text-sm">สวัสดีค่ะ มีโจทย์เรื่องเซตข้อไหนที่แก้ไม่ได้หรือเปล่าคะ? ลองพิมพ์มาได้เลยค่ะ</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-white/30">
+                <div class="flex space-x-2">
+                    <input type="text" id="solver-chat-input" class="flex-1 border-slate-300 rounded-lg bg-white/60 backdrop-blur-lg border-white/20 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300" placeholder="พิมพ์โจทย์ของคุณ...">
+                    <button id="solver-chat-send" class="px-4 py-2 rounded-lg font-semibold text-sm bg-purple-600 text-white">ส่ง</button>
+                </div>
+            </div>
+            <button id="close-ai-solver-btn" class="absolute top-3 right-3 text-slate-500 hover:text-slate-800 text-2xl font-bold transition-colors duration-300">×</button>
         </div>
     </div>
 
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDYi6Ozmf6vEWkWg49QC5MuyJAvt7a-xZc",
+            authDomain: "secset-542cb.firebaseapp.com",
+            projectId: "secset-542cb",
+            storageBucket: "secset-542cb.appspot.com",
+            messagingSenderId: "735349862292",
+            appId: "1:735349862292:web:a86d3f77dd3b7153d4a981",
+            measurementId: "G-Y6V4MV1XGB"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        try {
+            db.settings({ experimentalForceLongPolling: true });
+        } catch (e) {
+            console.warn("Could not set Firestore long polling:", e);
+        }
+
+        // --- YouTube Player API Logic ---
+        let ytPlayer;
+        function onYouTubeIframeAPIReady() {
+            ytPlayer = new YT.Player('player', {
+                height: '360',
+                width: '640',
+                videoId: 'bYRwxh0LdHk',
+                playerVars: { 'playsinline': 1, 'modestbranding': 1, 'rel': 0 }
+            });
+        }
+    
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // ===================================================================
+            // === START: REAL AI API FUNCTIONS ==================================
+            // ===================================================================
+
+            // IMPORTANT: Paste your secret API Key here
+            const YOUR_API_KEY = "PASTE_YOUR_API_KEY_HERE";
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${YOUR_API_KEY}`;
+            
+            function formatAIResponse(text) {
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                    .replace(/\*(.*?)\*/g, '<i>$1</i>')
+                    .replace(/\n/g, '<br>');
+            }
+    
+            const callGeminiAPI = async (prompt, chatBoxId, persona) => {
+                const typingIndicatorId = `typing-${Date.now()}`;
+                appendMessage({ text: '' }, 'ai', chatBoxId, typingIndicatorId);
+
+                let systemInstruction = "You are 'Nong Khom' (น้องขอม), a friendly, encouraging, and helpful AI tutor from Thailand. Your expertise is in teaching mathematics, specifically the topic of Set Theory, to high school students. Respond in Thai. Keep your explanations clear, simple, and easy to understand, using analogies if possible. Be cheerful and use emojis where appropriate. Your goal is to make learning fun and accessible.";
+                if (persona === 'Problem Solver') {
+                    systemInstruction = "You are an expert AI mathematician. A student will provide you with a math problem about Set Theory. Your task is to provide a clear, step-by-step solution in Thai. Explain the logic behind each step. Be precise and accurate.";
+                }
+
+                const requestBody = {
+                    "contents": [{ "parts": [{ "text": `${systemInstruction}\n\nUser's question:\n${prompt}` }] }],
+                    "generationConfig": { "temperature": 0.7, "topK": 1, "topP": 1, "maxOutputTokens": 2048 }
+                };
+    
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody),
+                    });
+    
+                    if (!response.ok) { throw new Error(`API Error: ${response.status} ${response.statusText}`); }
+    
+                    const data = await response.json();
+                    if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+                        throw new Error("Invalid API response format");
+                    }
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    const formattedText = formatAIResponse(aiText);
+                    updateTypingIndicator(typingIndicatorId, formattedText, chatBoxId);
+    
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    const errorMessage = "ขออภัยค่ะน้องขอมมีปัญหาเล็กน้อยในตอนนี้ ลองใหม่อีกครั้งนะคะ 🙏";
+                    updateTypingIndicator(typingIndicatorId, errorMessage, chatBoxId);
+                }
+            };
+    
+            const generateQuizWithGemini = async () => {
+                quizLoadingModal.classList.remove('hidden');
+                const prompt = `
+                    Generate a 4-question multiple-choice quiz about basic Set Theory for high school students.
+                    Topics should include: empty sets, unions, intersections, and subsets.
+                    Return ONLY a valid JSON array of objects. Do not include any other text or markdown.
+                    Each object must have keys: "question", "options" (an array of 4 strings), and "correctAnswer" (the correct option string).
+                    Questions and answers must be in Thai.
+                `;
+                const requestBody = {
+                    "contents": [{ "parts": [{ "text": prompt }] }],
+                    "generationConfig": { "response_mime_type": "application/json", "temperature": 0.8 }
+                };
+    
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody),
+                    });
+    
+                    if (!response.ok) { throw new Error(`API Error: ${response.statusText}`); }
+    
+                    const data = await response.json();
+                    const jsonString = data.candidates[0].content.parts[0].text;
+                    
+                    quizQuestions = JSON.parse(jsonString);
+                    quizQuestions.push(...staticQuizQuestions);
+    
+                } catch (error) {
+                    console.error("Error generating quiz with Gemini:", error);
+                    quizQuestions = [...staticQuizQuestions];
+                } finally {
+                    quizLoadingModal.classList.add('hidden');
+                }
+            };
+    
+            // ===================================================================
+            // === END: REAL AI API FUNCTIONS ====================================
+            // ===================================================================
+    
+            // --- UI AND APP LOGIC (abbreviated for clarity, but this contains your original functions) ---
+    
+            const loginSection = document.getElementById('login-section');
+            const mainApp = document.getElementById('main-app');
+            const navLinks = document.querySelectorAll('.nav-link');
+            let currentSection = document.querySelector('.app-section:not(.hidden)');
+            let isTransitioning = false;
+    
+            // Function to switch between login/signup views
+            document.getElementById('show-signup').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('login-view').classList.add('hidden'); document.getElementById('signup-view').classList.remove('hidden'); });
+            document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('signup-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden'); });
+            
+            // Firebase Auth and UI update logic...
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // showMainApp(user) logic here
+                    const userName = user.displayName || 'User';
+                    document.getElementById('user-name-desktop').textContent = userName;
+                    document.getElementById('user-name-dropdown').textContent = userName;
+                    document.getElementById('user-email-dropdown').textContent = user.email;
+                    document.getElementById('profile-img-desktop').src = user.photoURL || 'https://api.dicebear.com/7.x/bottts/svg?seed=Annie';
+                    loginSection.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    mainApp.classList.remove('opacity-0');
+                } else {
+                    // showLoginScreen() logic here
+                    mainApp.classList.add('hidden');
+                    mainApp.classList.add('opacity-0');
+                    loginSection.classList.remove('hidden');
+                }
+            });
+
+             // Login/Signup form handlers
+             document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+                auth.signInWithEmailAndPassword(email, password).catch(err => {
+                    document.getElementById('login-error').textContent = err.message;
+                    document.getElementById('login-error').classList.remove('hidden');
+                });
+            });
+            document.getElementById('signup-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = e.target.username.value;
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+                auth.createUserWithEmailAndPassword(email, password).then(cred => {
+                    return cred.user.updateProfile({ displayName: username });
+                }).catch(err => {
+                     document.getElementById('signup-error').textContent = err.message;
+                    document.getElementById('signup-error').classList.remove('hidden');
+                });
+            });
+
+            // Navigation logic
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    document.querySelectorAll('.app-section').forEach(sec => sec.classList.add('hidden'));
+                    document.getElementById(targetId).classList.remove('hidden');
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+                });
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });
+            document.getElementById('mobile-logout-btn').addEventListener('click', (e) => { e.preventDefault(); auth.signOut(); });
+            
+            // Profile Menu
+            document.getElementById('profile-menu-button').addEventListener('click', () => {
+                document.getElementById('profile-menu-dropdown').classList.toggle('hidden');
+            });
+
+            // Chat setup logic
+            const appendMessage = (message, sender, chatBoxId, elementId = null) => {
+                const chatBox = document.getElementById(chatBoxId);
+                const msgWrapper = document.createElement('div');
+                msgWrapper.id = elementId;
+                msgWrapper.className = `flex mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+                const msgBubble = document.createElement('div');
+                msgBubble.className = `p-3 rounded-lg max-w-xs ${sender === 'user' ? 'bg-indigo-500 text-white' : 'bg-white/60'}`;
+                msgBubble.innerHTML = (typeof message.text === 'string' && message.text !== '') 
+                    ? `<p class="text-sm">${message.text}</p>` 
+                    : `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+                msgWrapper.appendChild(msgBubble);
+                chatBox.appendChild(msgWrapper);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            };
+
+            const updateTypingIndicator = (indicatorId, newText, chatBoxId) => {
+                const indicatorWrapper = document.getElementById(indicatorId);
+                if (indicatorWrapper) {
+                    indicatorWrapper.querySelector('div').innerHTML = `<p class="text-sm">${newText}</p>`;
+                }
+            };
+
+            const setupChat = (inputId, sendId, chatBoxId, persona) => {
+                const input = document.getElementById(inputId);
+                const sendButton = document.getElementById(sendId);
+                const sendMessage = () => {
+                    const prompt = input.value.trim();
+                    if (prompt) {
+                        appendMessage({text: prompt}, 'user', chatBoxId);
+                        input.value = '';
+                        callGeminiAPI(prompt, chatBoxId, persona);
+                    }
+                };
+                sendButton.addEventListener('click', sendMessage);
+                input.addEventListener('keyup', (e) => { if (e.key === 'Enter') sendMessage(); });
+            };
+
+            setupChat('study-chat-input', 'study-chat-send', 'study-chat-box', 'Study Buddy');
+            setupChat('solver-chat-input', 'solver-chat-send', 'solver-chat-box', 'Problem Solver');
+            
+            document.getElementById('open-ai-solver-btn').addEventListener('click', () => document.getElementById('ai-solver-modal').classList.remove('hidden'));
+            document.getElementById('close-ai-solver-btn').addEventListener('click', () => document.getElementById('ai-solver-modal').classList.add('hidden'));
+
+            // Quiz Logic
+            const quizModal = document.getElementById('quiz-modal');
+            const quizProgressBar = document.getElementById('quiz-progress-bar');
+            const quizContent = document.getElementById('quiz-content');
+            let staticQuizQuestions = [
+                { question: "ข้อใดคือสัญลักษณ์ของเซตว่าง?", options: ["{0}", "{}", "0", "∅"], correctAnswer: "∅" },
+                { question: "ถ้า A = {1, 2, 3} แล้ว n(A) เท่ากับเท่าใด?", options: ["1", "2", "3", "6"], correctAnswer: "3" },
+            ];
+            let quizQuestions = [...staticQuizQuestions];
+            let dailyQuizCurrentQuestionIndex = 0;
+            let score = 0;
+
+            const startQuiz = async () => {
+                await generateQuizWithGemini();
+                dailyQuizCurrentQuestionIndex = 0;
+                score = 0;
+                quizModal.classList.remove('hidden');
+                showQuizQuestion();
+            };
+
+            const showQuizQuestion = () => {
+                if (dailyQuizCurrentQuestionIndex < quizQuestions.length) {
+                    const q = quizQuestions[dailyQuizCurrentQuestionIndex];
+                    quizProgressBar.style.width = `${(dailyQuizCurrentQuestionIndex / quizQuestions.length) * 100}%`;
+                    quizContent.innerHTML = `
+                        <p class="text-2xl font-semibold mb-8">${q.question}</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${q.options.map(o => `<button class="quiz-option p-4 border rounded-lg hover:bg-slate-100">${o}</button>`).join('')}</div>
+                    `;
+                    document.querySelectorAll('.quiz-option').forEach(btn => btn.addEventListener('click', handleAnswer));
+                } else {
+                    showQuizResult();
+                }
+            };
+            
+            const handleAnswer = (e) => {
+                const selected = e.target.innerText;
+                const correct = quizQuestions[dailyQuizCurrentQuestionIndex].correctAnswer;
+                if (selected === correct) score++;
+                document.querySelectorAll('.quiz-option').forEach(btn => {
+                    btn.disabled = true;
+                    if (btn.innerText === correct) btn.classList.add('bg-green-200');
+                    else if (btn.innerText === selected) btn.classList.add('bg-red-200');
+                });
+                setTimeout(() => {
+                    dailyQuizCurrentQuestionIndex++;
+                    showQuizQuestion();
+                }, 1500);
+            };
+
+            const showQuizResult = () => {
+                quizProgressBar.style.width = '100%';
+                quizContent.innerHTML = `<div class="text-center">
+                    <h3 class="text-4xl font-bold">ทำแบบทดสอบเสร็จแล้ว!</h3>
+                    <p class="text-2xl mt-4">คุณได้ ${score} จาก ${quizQuestions.length} คะแนน</p>
+                    <button id="close-quiz-result-btn" class="mt-8 px-6 py-2 bg-indigo-600 text-white rounded-lg">ปิด</button>
+                </div>`;
+                document.getElementById('close-quiz-result-btn').addEventListener('click', closeQuiz);
+            };
+
+            const closeQuiz = () => quizModal.classList.add('hidden');
+
+            document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+            document.getElementById('close-quiz-btn').addEventListener('click', closeQuiz);
+        });
+    </script>
 </body>
+
 </html>
-
-
